@@ -1,3 +1,7 @@
 *.csv
 *.env
 *.venv
+contacts.xlsx
+contact_activities.json
+*.xlsx
+*.json

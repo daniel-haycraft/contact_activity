@@ -155,7 +155,7 @@ ENGAGEMENTS = {
 TRANSCRIPT_ENDPOINTS = [
     "/crm/extensions/calling/2026-09/transcripts/{id}",
     "/crm/extensions/calling/2026-03/transcripts/{id}",
-    "/crm/v3/extensions/calling/transcripts/{id}",
+    "/crm/extensions/calling/2026-09/transcripts/{id}",,
 ]
 
 _owners = {}
@@ -222,7 +222,7 @@ def fetch_contacts(emails):
     batches = list(chunks(emails, 100))
     for n, batch in enumerate(batches, 1):
         log(f"  contact lookup {n}/{len(batches)}")
-        data = hs_request("POST", "/crm/v3/objects/contacts/batch/read", json={
+        data = hs_request("POST", "/crm/objects/2026-09/contacts/batch/read", json={
             "idProperty": "email", "inputs": [{"id": e} for e in batch], "properties": CONTACT_PROPS})
         for r in data.get("results", []):
             p = r.get("properties", {})
@@ -236,7 +236,7 @@ def preload_owners():
     while True:
         params = {"limit": 500, **({"after": after} if after else {})}
         try:
-            data = hs_request("GET", "/crm/v3/owners", params=params)
+            data = hs_request("GET", "/crm/objects/2026-09/owners", params=params)
         except Exception as e:
             log(f"  could not load owners: {str(e)[:120]}")
             return
@@ -291,7 +291,7 @@ def fetch_records(object_type, ids, properties):
     batches = list(chunks(list(dict.fromkeys(ids)), 100))
     for n, batch in enumerate(batches, 1):
         log(f"  {object_type}: reading {n}/{len(batches)} ({len(batch)} records)")
-        data = hs_request("POST", f"/crm/v3/objects/{object_type}/batch/read",
+        data = hs_request("POST", f"/crm/objects/2026-09/{object_type}/batch/read",
                           json={"inputs": [{"id": i} for i in batch], "properties": properties})
         for r in data.get("results", []):
             results[str(r["id"])] = r
@@ -482,9 +482,9 @@ def test_transcript(args):
         print(f"  body:          {r.text[:300].strip()}\n")
     # sanity check: a known-good endpoint with the same token and session
     _hs_limiter.wait()
-    r = _hs_session.get(HS_BASE + f"/crm/v3/objects/calls/{call_id}", headers=HS_HEADERS, timeout=60,
+    r = _hs_session.get(HS_BASE + f"/crm/objects/2026-09/objects/calls/{call_id}", headers=HS_HEADERS, timeout=60,
                         params={"properties": "hs_call_has_transcript,hs_call_transcription_id"})
-    print(f"Control request GET /crm/v3/objects/calls/{call_id}")
+    print(f"Control request GET /crm/objects/2026-09/objects/calls/{call_id}")
     print(f"  status:        {r.status_code}")
     print(f"  final url:     {r.url}")
     print(f"  content-type:  {r.headers.get('Content-Type')}")
@@ -494,7 +494,7 @@ def test_transcript(args):
 def discover(contact_id):
     types = list(ENGAGEMENTS) + ["tasks", "meetings", "deals", "tickets"]
     try:
-        types += [s["objectTypeId"] for s in hs_request("GET", "/crm/v3/schemas").get("results", [])]
+        types += [s["objectTypeId"] for s in hs_request("GET", "/crm/objects/2026-09/schemas").get("results", [])]
     except Exception as e:
         log(f"could not list custom objects: {str(e)[:100]}")
     print(f"\nObject types attached to contact {contact_id}:")
